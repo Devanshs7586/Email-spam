@@ -1,3 +1,5 @@
+const API_BASE_URL = "http://127.0.0.1:8000";
+
 const emailText = document.querySelector("#emailText");
 const count = document.querySelector("#count");
 const button = document.querySelector("#analyzeBtn");
@@ -38,7 +40,7 @@ button.addEventListener("click", async () => {
   button.querySelector("span").textContent = "Analyzing...";
 
   try {
-    const response = await fetch("https://email-spam-1-98y9.onrender.com", {
+    const response = await fetch(`${API_BASE_URL}/predict`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -56,7 +58,8 @@ button.addEventListener("click", async () => {
 
     showResult(data);
   } catch (err) {
-    error.textContent = err.message;
+    error.textContent =
+      "Backend is not running. Start FastAPI using: uvicorn main:app --reload";
   } finally {
     button.disabled = false;
     button.querySelector("span").textContent = "Analyze email";

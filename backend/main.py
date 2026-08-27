@@ -5,8 +5,7 @@ from pathlib import Path
 
 import nltk
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 from nltk.corpus import stopwords
@@ -15,10 +14,8 @@ from pydantic import BaseModel, Field
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "model"
-FRONTEND_DIR = BASE_DIR.parent / "frontend"
 
 
-# Download stopwords only if they are not available
 try:
     stopwords.words("english")
 except LookupError:
@@ -27,7 +24,6 @@ except LookupError:
 STOP_WORDS = set(stopwords.words("english"))
 
 
-# Load tokenizer, configuration, labels, and trained GRU model
 with open(MODEL_DIR / "tokenizer.pkl", "rb") as file:
     tokenizer = pickle.load(file)
 
@@ -43,8 +39,14 @@ model = load_model(MODEL_DIR / "gru_model.keras")
 app = FastAPI(title="Email Spam Detector API")
 
 
-# Serve CSS and JavaScript files
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+# Allows independent frontend to call the backend.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class PredictionRequest(BaseModel):
@@ -53,15 +55,11 @@ class PredictionRequest(BaseModel):
 
 def clean_text(text: str) -> str:
     text = text.lower()
-
-    # Remove punctuation
     text = text.translate(str.maketrans("", "", string.punctuation))
 
-    # Remove English stopwords
     words = [word for word in text.split() if word not in STOP_WORDS]
     text = " ".join(words)
 
-    # Remove links
     text = re.sub(r"http\S+", "", text)
 
     return text.strip()
@@ -69,7 +67,9 @@ def clean_text(text: str) -> str:
 
 @app.get("/")
 def home():
-    return FileResponse(FRONTEND_DIR / "index.html")
+    return {
+        "message": "Email Spam Detector API is running"
+    }
 
 
 @app.get("/health")
@@ -104,14 +104,6 @@ def predict(payload: PredictionRequest):
 
     prediction_id = 1 if spam_probability > 0.5 else 0
 
-    confidence = (
-        spam_probability * 100
-        if prediction_id == 1
-        else (1 - spam_probability) * 100
-    )
-
     return {
-        "prediction": label_mapping[prediction_id],
-        "spam_probability": round(spam_probability, 4),
-        "confidence": round(confidence, 2)
+        "prediction": label_mapping[prediction_id]
     }
