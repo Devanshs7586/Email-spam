@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "https://email-spam-1-98y9.onrender.com";
 
 const emailText = document.querySelector("#emailText");
 const count = document.querySelector("#count");
