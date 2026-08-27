@@ -38,7 +38,7 @@ button.addEventListener("click", async () => {
   button.querySelector("span").textContent = "Analyzing...";
 
   try {
-    const response = await fetch("/predict", {
+    const response = await fetch("https://email-spam-1-98y9.onrender.com", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
